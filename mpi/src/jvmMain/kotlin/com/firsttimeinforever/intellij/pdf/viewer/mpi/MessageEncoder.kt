@@ -5,10 +5,10 @@ import java.net.URLEncoder
 
 actual object MessageEncoder {
   actual fun encode(data: String): String {
-    return URLEncoder.encode(data, Charsets.UTF_8).replace("+", "%20")
+    return URLEncoder.encode(data, Charsets.UTF_8.toString()).replace("+", "%20")
   }
 
   actual fun decode(data: String): String {
-    return URLDecoder.decode(data, Charsets.UTF_8)
+    return URLDecoder.decode(data, Charsets.UTF_8.toString())
   }
 }
