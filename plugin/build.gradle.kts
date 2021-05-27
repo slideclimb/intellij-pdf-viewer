@@ -53,7 +53,7 @@ intellij {
   updateSinceUntilBuild = false
   pluginName = fromProperties("pluginName")
 
-  setPlugins("nl.rubensten.texifyidea:0.7.5")
+  setPlugins("nl.rubensten.texifyidea:0.7.7-alpha.2@alpha")
 }
 
 tasks {
@@ -61,7 +61,7 @@ tasks {
     kotlinOptions {
       jvmTarget = JavaVersion.VERSION_11.toString()
       @Suppress("SuspiciousCollectionReassignment")
-      freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+      freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn", "-Xallow-unstable-dependencies")
     }
   }
   changelog {
