@@ -61,7 +61,8 @@ class TexPdfViewer : ExternalPdfViewer {
       val fileEditorManager = FileEditorManager.getInstance(project)
 
       ApplicationManager.getApplication().invokeLater {
-        val jcefEditor = if (fileEditorManager.isFileOpen(file)) {
+        val isAlreadyOpen = fileEditorManager.isFileOpen(file)
+        val jcefEditor = if (isAlreadyOpen) {
           val editor = fileEditorManager.getSelectedEditor(file)
           pdfEditor.navigate(false)
           editor as PdfFileEditor
@@ -83,15 +84,23 @@ class TexPdfViewer : ExternalPdfViewer {
           .associate { it.groups["id"]?.value to it.groups["value"]?.value }
           .filter { it.key != null && it.value != null }
 
-        jcefEditor.viewComponent.controller?.setForwardSearchData(
-          SynctexPreciseLocation(
-            values["Page"]?.toInt() ?: 1,
-            values["h"]?.toDouble() ?: 0.0,
-            values["v"]?.toDouble() ?: 0.0,
-            values["W"]?.toDouble() ?: 0.0,
-            values["H"]?.toDouble() ?: 0.0,
-          )
+        val data = SynctexPreciseLocation(
+          values["Page"]?.toInt() ?: 1,
+          values["h"]?.toDouble() ?: 0.0,
+          values["v"]?.toDouble() ?: 0.0,
+          values["W"]?.toDouble() ?: 0.0,
+          values["H"]?.toDouble() ?: 0.0,
         )
+
+        jcefEditor.viewComponent.controller?.let {
+          if (isAlreadyOpen) {
+            it.setForwardSearchData(data)
+          } else {
+            it.addOnViewLoadedListener {
+              it.setForwardSearchData(data)
+            }
+          }
+        }
       }
     }
   }

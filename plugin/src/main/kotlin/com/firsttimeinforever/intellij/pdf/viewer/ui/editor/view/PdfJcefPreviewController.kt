@@ -46,8 +46,19 @@ class PdfJcefPreviewController(val project: Project, val virtualFile: VirtualFil
   val presentationController = PdfPresentationController(this)
   private val messageBusConnection = project.messageBus.connect(this)
 
+  /**
+   * Listeners that are executed the next time a pdf is loaded. They are destroyed afterwards.
+   */
+  private val onceViewLoadedListeners = mutableListOf<() -> Unit>()
+
   private val isReloading = AtomicBoolean(false)
   private var viewLoaded = false
+    set(value) {
+      field = value
+      println("${virtualFile.name} loaded: $value")
+      onceViewLoadedListeners.forEach { it() }
+      onceViewLoadedListeners.clear()
+    }
   private var firstLoad = true
 
   /**
@@ -153,6 +164,10 @@ class PdfJcefPreviewController(val project: Project, val virtualFile: VirtualFil
         else -> doActualReload(tryToPreserveState)
       }
     }
+  }
+
+  fun addOnViewLoadedListener(listener: () -> Unit) {
+    onceViewLoadedListeners.add(listener)
   }
 
   private fun collectThemeColors(
