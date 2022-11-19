@@ -56,9 +56,11 @@ class SynctexSearchController(private val pipe: MessagePipe, private val viewer:
     }
   }
 
+  /**
+  * Get PDF view resolution, assuming that currentScale is relative to a fixed browser resolution of 96 dpi, and that synctex uses the big
+   * point (1/72th of an inch).
+  */
   private fun calculateResolution(): Float {
-    // Get PDF view resolution, assuming that currentScale is relative to a
-    // fixed browser resolution of 96 dpi, and that synctex uses the big point (1/72th of an inch)
     return 72 / (viewer.viewerApp.pdfViewer.currentScale.toFloat() * 96)
   }
 
@@ -143,50 +145,28 @@ class SynctexSearchController(private val pipe: MessagePipe, private val viewer:
   private fun executeForwardSearch() {
     resetCanvas()
     val searchData = forwardSearchData ?: return
-    // Scroll to the page before requesting the canvas, to ensure that the page has been loaded.
-    val pages = getPages(viewerDocument)
-    val page = pages[searchData.page - 1] as? HTMLElement
-    checkNotNull(page)
-    page.scrollIntoView()
-    val canvas = page.querySelector("canvas") as HTMLCanvasElement
-    // Create a new canvas to draw on, on top of the already existing canvas.
-    val drawingCanvas = createDrawingCanvas(viewerDocument, canvas.width, canvas.height)
-    canvas.parentElement!!.appendChild(drawingCanvas)
-    // Add this new canvas to the list of drawing canvases, so we can easily delete it later.
-    drawingCanvases.add(drawingCanvas)
 
-    val rectangle = createSelectionRectangle()
-    val context = drawingCanvas.getContext("2d") as CanvasRenderingContext2D
-    with(context) {
-      strokeStyle = "red"
-      strokeRect(rectangle.x, rectangle.y, rectangle.width, rectangle.height)
+    viewer.currentPageNumber = searchData.page
+    val page = viewer.viewerApp.pdfViewer._pages[searchData.page - 1]
+
+    val canvas = page.canvas as? HTMLCanvasElement
+    canvas?.let {
+      // Create a new canvas to draw on, on top of the already existing canvas.
+      val drawingCanvas = createDrawingCanvas(viewerDocument, it.width, it.height)
+      it.parentElement!!.appendChild(drawingCanvas)
+      // Add this new canvas to the list of drawing canvases, so we can easily delete it later.
+      drawingCanvases.add(drawingCanvas)
+
+      val rectangle = createSelectionRectangle()
+      val context = drawingCanvas.getContext("2d") as CanvasRenderingContext2D
+      with(context) {
+        strokeStyle = "red"
+        strokeRect(rectangle.x, rectangle.y, rectangle.width, rectangle.height)
+      }
     }
-
-    // Create a dummy element so we can scroll to the rectangle we have just drawn.
-    scrollIntoViewByDummyElement(canvas.parentElement!!, rectangle.x,  rectangle.y)
-  }
-
-  private fun scrollIntoViewByDummyElement(targetElement: Element, left: Number, top: Number) {
-    val dummyElement = viewerDocument.createElement("scrollDummy") as HTMLElement
-    with(dummyElement) {
-      style.position = "absolute"
-      style.left = "${left}px"
-      style.top = "${top}px"
-    }
-    targetElement.appendChild(dummyElement)
-    // Center the rectangle/forward search result in the pdf view.
-    dummyElement.scrollIntoView(json(
-      "block" to "center",
-      "inline" to "center"
-    ))
-    targetElement.removeChild(dummyElement)
   }
 
   companion object {
-    private fun getPages(document: Document): NodeList {
-      return document.querySelectorAll(".page")
-    }
-
     private fun isMacos(): Boolean {
       return window.navigator.platform.lowercase().contains("mac")
     }

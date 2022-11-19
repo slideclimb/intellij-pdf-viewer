@@ -4,4 +4,5 @@ import org.w3c.dom.HTMLDivElement
 
 external class InternalPageObject {
   val div: HTMLDivElement
+  val canvas: dynamic
 }
